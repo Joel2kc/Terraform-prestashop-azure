@@ -38,14 +38,6 @@ One container runs the PrestaShop application and the other runs MariaDB. The
 database credentials are passed in as environment variables and the database
 data is kept safe using a Docker volume so it survives container restarts.
 
-## Project Structure
-
-main.tf — core Terraform configuration defining all Azure resources
-variables.tf — variable declarations for all configurable values
-terraform.tfvars.example — example values file showing what inputs are needed
-inventory.ini — Ansible inventory pointing to the provisioned VM
-playbook.yml — Ansible playbook that installs Docker and deploys the application
-
 ## How to Use This Project
 
 Start by copying terraform.tfvars.example to terraform.tfvars and filling in
