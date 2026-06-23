@@ -1,0 +1,6 @@
+resource_group_name = "prestashop-rg"
+location            = "francecentral"
+vm_size             = "Standard_B2s"
+admin_username      = "azureuser"
+admin_password      = "YourPasswordHere"
+vm_name             = "prestashop-vm"

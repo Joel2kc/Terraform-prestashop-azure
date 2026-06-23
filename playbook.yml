@@ -1,0 +1,125 @@
+---
+- name: Deploy PrestaShop with MariaDB on Azure VM
+  hosts: prestashop
+  become: true
+
+  vars:
+    prestashop_dir: /opt/prestashop
+    db_name: prestashop_db
+    db_user: prestashop_user
+    db_password: PrestaDBPass123!
+    db_root_password: RootDBPass123!
+    prestashop_domain: "{{ ansible_host }}"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required system packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable"
+        state: present
+
+    - name: Install Docker CE
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Install Docker Compose plugin
+      apt:
+        name: docker-compose-plugin
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Create prestashop working directory
+      file:
+        path: "{{ prestashop_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Write Docker Compose file for PrestaShop and MariaDB
+      copy:
+        dest: "{{ prestashop_dir }}/docker-compose.yml"
+        content: |
+          version: '3.8'
+
+          services:
+            mariadb:
+              image: mariadb:10.6
+              container_name: prestashop_db
+              restart: always
+              environment:
+                MYSQL_ROOT_PASSWORD: {{ db_root_password }}
+                MYSQL_DATABASE: {{ db_name }}
+                MYSQL_USER: {{ db_user }}
+                MYSQL_PASSWORD: {{ db_password }}
+              volumes:
+                - db_data:/var/lib/mysql
+
+            prestashop:
+              image: prestashop/prestashop:latest
+              container_name: prestashop_app
+              restart: always
+              ports:
+                - "80:80"
+              environment:
+                DB_SERVER: mariadb
+                DB_NAME: {{ db_name }}
+                DB_USER: {{ db_user }}
+                DB_PASSWD: {{ db_password }}
+                PS_DOMAIN: {{ prestashop_domain }}
+                PS_INSTALL_AUTO: 1
+                PS_LANGUAGE: en
+                PS_COUNTRY: FR
+                ADMIN_MAIL: admin@example.com
+                ADMIN_PASSWD: AdminPass123!
+              depends_on:
+                - mariadb
+
+          volumes:
+            db_data:
+
+    - name: Pull Docker images
+      command: docker compose pull
+      args:
+        chdir: "{{ prestashop_dir }}"
+
+    - name: Start PrestaShop stack with Docker Compose
+      command: docker compose up -d
+      args:
+        chdir: "{{ prestashop_dir }}"
+
+    - name: Confirm containers are running
+      command: docker compose ps
+      args:
+        chdir: "{{ prestashop_dir }}"
+      register: compose_status
+
+    - name: Print container status
+      debug:
+        msg: "{{ compose_status.stdout }}"
