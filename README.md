@@ -1,4 +1,4 @@
-# PrestaShop on Azure — Infrastructure as Code with Terraform and Ansible
+# PrestaShop on Azure:Infrastructure as Code with Terraform and Ansible
 
 ## Overview
 
